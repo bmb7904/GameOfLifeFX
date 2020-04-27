@@ -1,5 +1,7 @@
 package bernardi;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -12,8 +14,12 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.lang.reflect.Executable;
+import java.security.Key;
+import java.sql.Time;
+import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
@@ -27,6 +33,8 @@ public class ColorGrid extends Application {
     private static boolean GridLines;
     private static GridPane pane = new GridPane();
     private static boolean resetPressed;
+
+    private Timeline timeline;
 
     @Override
     public void start(Stage primaryStage) {
@@ -74,9 +82,9 @@ public class ColorGrid extends Application {
             numberOfCells = pane.getChildren().size();
         }
 
-        ScheduledExecutorService executorService =
-                Executors.newSingleThreadScheduledExecutor();
-
+        KeyFrame kf = new KeyFrame(Duration.millis(370), e -> getAndUpdateNextGen());
+        timeline = new Timeline(kf);
+        timeline.setCycleCount(Timeline.INDEFINITE);
 
         // lambda expression to set what happens when create grid button is pushed
         createGrid.setOnAction(event -> {
@@ -87,38 +95,22 @@ public class ColorGrid extends Application {
 
         // Lambda expression to set what happens upon start button click
         start.setOnAction(event -> {
-
-
-            executorService.scheduleAtFixedRate(runnableTask,0,400,
-                    TimeUnit.MILLISECONDS);
-
-            /*
-            while(true) {
-                grid = simulateNextGeneration(grid);
-                setCellID(grid, pane);
-                updateColors(pane);
-                pause(800);
-                if(resetPressed) {
-                    break;
-                }
-            }
-            resetPressed = false; */
+            timeline.play();
+            start.setDisable(true);
 
             });
 
         reset.setOnAction(event -> {
-            System.exit(0);
-            resetGrid(pane);
-            resetPressed = true;
+            timeline.pause();
+            start.setDisable(false);
+
 
         });
-
 
 
         primaryStage.setScene(scene);
         primaryStage.setAlwaysOnTop(true);
         primaryStage.show();
-
 
     }
 
@@ -192,13 +184,6 @@ public class ColorGrid extends Application {
         return newGrid;
     }
 
-    Runnable runnableTask = () -> {
-
-        grid = simulateNextGeneration(grid);
-        setCellID(grid, pane);
-        updateColors(pane);
-    };
-
     /**
      * Method to update colors of the list of nodes of the GridPane pane
      */
@@ -241,7 +226,7 @@ public class ColorGrid extends Application {
         }
     }
 
-    private static void resetGrid(GridPane pane) {
+    private static void resetGrid() {
         for(int i = 0; i < numberOfCells; i ++) {
             Rectangle cell = (Rectangle) pane.getChildren().get(i);
             cell.setId("DEAD");
@@ -249,8 +234,6 @@ public class ColorGrid extends Application {
         }
 
     }
-
-
 
     /**
      * Helper method that takes in a two dimensional boolean array and a GridPane with
@@ -273,15 +256,14 @@ public class ColorGrid extends Application {
     }
 
     /**
-     * Helper method that will cause the program to pause for the specified number of
-     * milliseconds.
+     * Using other helper methods, this method will take the current state of the game
+     * array, update it with the next generation, and update the shown grid using the
+     * array.
      */
-    private static void pause(int milliseconds) {
-        long timestamp = System.currentTimeMillis();
-
-        do {
-
-        }while(System.currentTimeMillis() < timestamp + milliseconds);
+    private void getAndUpdateNextGen(){
+        grid = simulateNextGeneration(grid);
+        setCellID(grid, pane);
+        updateColors(pane);
     }
 
     public static void main(String[] args) {
